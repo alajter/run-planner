@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { hrvScore, loadScore, readiness, rhrScore, sleepScore } from "../src/lib/engine/readiness";
 import { step, weekRatio } from "../src/lib/engine/load";
+import { demoRunner } from "../demo/runner.mjs";
 
 describe("readiness score (run-coach)", () => {
   it("scores sleep on duration, deep, REM and awake time", () => {
     expect(sleepScore({ date: "d", total: 480, deep: 100, rem: 100, awake: 5 })).toBe(100);
-    expect(sleepScore({ date: "d", total: 310, deep: 52, rem: 75, awake: 4 })).toBe(58);   // 12 Nov: 5h10 (3) + deep 17 % (25) + REM 24 % (20) + awake (10)
+    expect(sleepScore({ date: "d", total: 310, deep: 52, rem: 75, awake: 4 })).toBe(58);   // 5h10 (3) + deep 17 % (25) + REM 24 % (20) + awake (10)
   });
   it("maps HRV, resting HR and load onto 0–100", () => {
     expect(hrvScore({ value: 44, baseline: 40, n: 28 })).toBe(100);
@@ -28,7 +29,26 @@ describe("load model", () => {
     expect(s.ctl).toBeCloseTo(2, 6);
     expect(s.atl).toBeCloseTo(10.75, 6);
   });
-  it("floors fitness at 45 in the week's ratio", () => {
-    expect(weekRatio({ ctl: 10, atl: 10 }, Array(7).fill(10)).ratio).toBeCloseTo(10 / 45, 2);
+  it("divides the week's mean fatigue by its mean fitness", () => {
+    expect(weekRatio({ ctl: 10, atl: 10 }, Array(7).fill(10)).ratio).toBeCloseTo(1, 6);
+    expect(weekRatio({ ctl: 10, atl: 10 }, Array(7).fill(30)).ratio).toBeGreaterThan(1.3);
+  });
+});
+
+describe("readiness on the demo runner", () => {
+  const demo = demoRunner("2026-11-25");
+  const base = (k: "hrv" | "rhr", from: number) => {
+    const xs = demo.nights.slice(from - 28, from).map(n => n[k]);
+    return xs.reduce((a, b) => a + b, 0) / xs.length;
+  };
+  it("is good to go on an ordinary morning", () => {
+    const i = demo.nights.length - 1, n = demo.nights[i];
+    const r = readiness({ sleep: n, hrv: { value: n.hrv, baseline: base("hrv", i), n: 28 }, rhr: { value: n.rhr, baseline: base("rhr", i), n: 28 }, load: null });
+    expect(r.verdict).toBe("green");
+  });
+  it("drops during the week with a cold", () => {
+    const i = demo.nights.findIndex(n => n.rhr > 58), n = demo.nights[i + 3];
+    const r = readiness({ sleep: n, hrv: { value: n.hrv, baseline: base("hrv", i), n: 28 }, rhr: { value: n.rhr, baseline: base("rhr", i), n: 28 }, load: null });
+    expect(r.verdict).not.toBe("green");
   });
 });

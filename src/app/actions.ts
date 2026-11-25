@@ -27,7 +27,7 @@ export async function logout() {
 }
 
 export async function syncNow() {
-  await sync();
+  if (process.env.DEMO !== "1") await sync();   // the demo has no Runalyze account to sync from
   revalidatePath("/", "layout");
 }
 

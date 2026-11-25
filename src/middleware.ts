@@ -3,6 +3,7 @@ import { COOKIE, valid } from "./lib/session";
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  if (process.env.DEMO === "1") return NextResponse.next();   // npm run demo: a made-up runner, no sign-in
   if (pathname === "/login" || pathname.startsWith("/api/cron/")) return NextResponse.next();   // cron checks its own secret
   if (await valid(req.cookies.get(COOKIE)?.value)) return NextResponse.next();
   const url = req.nextUrl.clone();

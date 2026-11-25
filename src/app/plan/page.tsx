@@ -37,7 +37,7 @@ export default async function Plan() {
           </div>
           {w.days.map(d => <DayLine key={d.date} d={d} easyCeiling={v.easyCeiling} paces={v.paces} today={v.today} />)}
           <Limits limits={w.limits} binding={w.binding}
-            note={w.current && v.acwr != null ? `Runalyze's load ratio today: ${v.acwr.toFixed(2)}. That one is today's fatigue over today's fitness with no floor, so after a quiet month it reads high; the plan's ratio averages the week and counts fitness as at least 45.` : null} />
+            note={w.current && v.acwr != null ? `Runalyze's load ratio today: ${v.acwr.toFixed(2)}. That one is today's fatigue over today's fitness; the plan's ratio averages the whole week.` : null} />
         </details>
       ))}
     </main>

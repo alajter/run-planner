@@ -68,7 +68,7 @@ export async function setPassphrase(p: string) {
 
 export async function timeZone(): Promise<{ tz: string; source: Source }> {
   const stored = await getSetting<string | null>("tz", null);
-  const tz = stored || process.env.ATHLETE_TZ || "Asia/Jerusalem";
+  const tz = stored || process.env.ATHLETE_TZ || "UTC";
   setTz(tz);
   return { tz, source: stored ? "settings" : process.env.ATHLETE_TZ ? "environment" : "missing" };
 }

@@ -1,29 +1,37 @@
-// Fitness, fatigue and the load ratio. The model and its constants follow Sparing Horse
-// (https://github.com/dros74/sparinghorse, Duarte Rosado, AGPL-3.0): "the earlier planner" below.
-// Load is Runalyze's TRIMP per calendar day, all sports. Fitness (CTL) and fatigue (ATL) are
-// exponentially weighted averages over 42 and 7 days, with alpha = 2 / (N + 1) as Runalyze uses.
-// The planning ratio is "shape-neutral": the week's mean fatigue over its mean fitness, with fitness
-// counted as at least 45 so a quiet month doesn't choke the weeks after it.
+// Fitness, fatigue and the load ratio. Every constant names its source; "my choice" means there is none.
+//
+// Load is Runalyze's TRIMP per calendar day, all sports. Fitness (CTL) and fatigue (ATL) are exponentially
+// weighted averages of it over 42 and 7 days, the Performance Manager convention (Coggan; Runalyze uses the
+// same spans), with the usual EWMA smoothing alpha = 2 / (N + 1).
+// The planning ratio is acute over chronic load: the week's mean fatigue over its mean fitness.
+import { speedAt } from "./zones";
 
 export const LOAD = {
-  tauCtl: 42, tauAtl: 7,
-  ctlFloor: 45,          // fitness counted as at least this
-  softCap: 1.25,         // a week's mean fatigue ≤ 1.25 × its mean fitness …
-  progFloor: 1.06,       // … unless the week carries no more than 1.06 × the last full week's load
-  defaultPerKm: 15,      // TRIMP per easy km when there are no recent runs to calibrate from
+  tauCtl: 42, tauAtl: 7,      // Coggan's Performance Manager spans, as in Runalyze
+  cap: 1.3,                   // Gabbett 2016 (BJSM): injury risk was lowest with an acute:chronic ratio of 0.8–1.3
+  defaultPerKm: 15,           // my choice, untuned: TRIMP per easy km until there are runs to calibrate from
 };
 
-// TRIMP per minute by zone, and the zone's pace as a fraction of vVO₂max (zones.ts).
-// A planned km of a zone costs (rate / easy rate) × (easy speed / zone speed) easy km. Quality
-// sessions are about half warm-up, cool-down and recoveries at easy effort.
-const RATE = { easy: 1.65, threshold: 2.55, interval: 3.10 };
-const SPEED = { easy: 0.72, threshold: 0.88, interval: 0.97 };
-const zoneKm = (z: "threshold" | "interval") => (RATE[z] / RATE.easy) * (SPEED.easy / SPEED[z]);
+// ── costing planned km ──
+// A planned km of a harder session costs more than an easy km. Each kind's intensity as a share of VO2max,
+// from the middle of Daniels' ranges (Daniels' Running Formula): easy 59–74 %, threshold 83–88 %,
+// interval 95–100 %. Heart-rate reserve is taken as the same share (%HRR tracks %VO2 reserve: Swain and
+// Leutholtz 1997). TRIMP per minute is Banister's: HRr × 0.64 e^(1.92 HRr) (Banister 1991, men's weighting).
+// Speed at each share comes from Daniels and Gilbert's oxygen cost of running, at a reference VO2max of 45
+// (my choice: the cost ratios barely move between 40 and 55).
+export const INTENSITY = { easy: 0.665, threshold: 0.855, interval: 0.975 };
+const REF_VO2MAX = 45;
+export const banisterPerMin = (hrr: number) => hrr * 0.64 * Math.exp(1.92 * hrr);
+const zoneKm = (f: number) =>
+  (banisterPerMin(f) / banisterPerMin(INTENSITY.easy)) * (speedAt(REF_VO2MAX, INTENSITY.easy) / speedAt(REF_VO2MAX, f));
+
 export const KM_FACTOR: Record<string, number> = {
   easy: 1, long: 1, rest: 0,
-  tempo: (1 + zoneKm("threshold")) / 2,
-  interval: (1 + zoneKm("interval")) / 2,
-  race: zoneKm("threshold"),        // the race is charged at threshold, as the old engine did
+  // a quality session is about half warm-up, recoveries and cool-down at easy effort (my choice, untuned)
+  tempo: (1 + zoneKm(INTENSITY.threshold)) / 2,
+  interval: (1 + zoneKm(INTENSITY.interval)) / 2,
+  // the race at threshold intensity: Daniels' threshold pace is about what can be held for an hour
+  race: zoneKm(INTENSITY.threshold),
 };
 
 export interface LoadState { ctl: number; atl: number }
@@ -35,15 +43,15 @@ export function step(s: LoadState, trimp: number): LoadState {
   };
 }
 
-/** The ratio a planned week is judged by: mean fatigue over mean fitness (floored), across its 7 days. */
+/** The ratio a planned week is judged by: mean fatigue over mean fitness across its 7 days. */
 export function weekRatio(start: LoadState, days: number[]): { ratio: number; end: LoadState; charge: number } {
   let s = start, atl = 0, ctl = 0, charge = 0;
   for (const t of days) { s = step(s, t); atl += s.atl; ctl += s.ctl; charge += t; }
   const n = days.length || 1;
-  return { ratio: (atl / n) / Math.max(ctl / n, LOAD.ctlFloor), end: s, charge };
+  return { ratio: ctl > 0 ? (atl / n) / (ctl / n) : 0, end: s, charge };
 }
 
-/** TRIMP per easy km from recent runs: what the old engine's calibration achieved. */
+/** TRIMP per easy km from recent runs (needs 15 km of them; my choice), else the default. */
 export function trimpPerKm(runs: { km: number; trimp: number | null }[]): number {
   const r = runs.filter(x => x.trimp && x.km > 0);
   const km = r.reduce((a, x) => a + x.km, 0);

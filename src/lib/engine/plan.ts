@@ -1,8 +1,9 @@
-// The plan, in km. Simple, visible rules that protect the calves: the long run steps up at most 10 %
-// a week, the week is sized around the long run, every 4th week is a down week, and the taper is a
-// fixed fraction of the peak, and the load ratio (fatigue over fitness, from TRIMP) trims the easy runs
-// when a week would rise faster than fitness can carry it. Weeks already run are read from the runs,
-// not from the plan, so a missed or shortened week sizes the next ones from what really happened.
+// The plan, in km. Simple, visible rules: the long run steps up at most 10 % a week, the week is sized
+// around the long run, every 4th week is a down week, the taper cuts volume and keeps intensity, and the
+// load ratio (fatigue over fitness, from TRIMP) trims the easy runs when a week would rise faster than
+// fitness can carry it. Weeks already run are read from the runs, not from the plan, so a missed or
+// shortened week sizes the next ones from what really happened.
+// Every constant names its source; "my choice" means there is none and it is untuned.
 import { addDays, daysBetween } from "../dates";
 import { KM_FACTOR, LOAD, step, weekRatio, type LoadState } from "./load";
 
@@ -18,22 +19,28 @@ export interface PlanSettings {
 }
 
 export const DEFAULT_SETTINGS: PlanSettings = {
-  race: { label: "Tel Aviv Half", date: "2027-02-26", km: 21.1, target: "1:59" },
-  blockStart: "2026-11-01", weekStartDow: 0, longRunDow: 0, longMaxKm: 16, volumeHoldKm: 30, fourthRunAtLongKm: 12, minRunKm: 4,
+  race: { label: "Riverside Half (fictional)", date: "2027-02-28", km: 21.1, target: "1:55" },
+  blockStart: "2026-10-25", weekStartDow: 0, longRunDow: 0, longMaxKm: 18, volumeHoldKm: 40, fourthRunAtLongKm: 12, minRunKm: 4,
 };
 
 export const RULES = {
+  // the "10 % rule": a common coaching heuristic, not a proven limit (a graded 10 % program did not lower
+  // injuries in novice runners: Buist et al. 2008, Am J Sports Med)
   longStep: 1.10,              // long run ≤ +10 % over the longest of the last 4 weeks
-  longShare3: 0.42,            // the long run's share of a 3-run week …
-  longShare4: 0.45,            // … and of a 4-run week
-  weekStep: 1.12,              // a week ≤ +12 % over the biggest of the last 4 weeks
+  weekStep: 1.10,              // a week ≤ +10 % over the biggest of the last 4 weeks
+  longShare3: 0.40,            // my choice, untuned: the long run's share of a 3-run week …
+  longShare4: 0.35,            // … and of a 4-run week
+  // 3:1 step loading, three building weeks then one lighter, as in periodization texts (e.g. Bompa and Haff)
   downEvery: 4,                // every 4th week of Base and Build is a down week …
-  downWeek: 0.80, downLong: 0.70,   // … at 80 % of the week and 70 % of the long run
-  taperWeek: [0.75, 0.6, 0.45], taperLong: [0.5, 0.38, 0.26],
-  qualityShare: 0.21,          // one mid-week quality session from Build week 2: its share of the week
-  easyLadder: 1.11,            // each later easy run a little longer than the one before
-  easyMaxOfLong: 0.85,         // no easy run longer than 85 % of the week's long run (the surplus is dropped)
-  phaseBase: 0.45, phaseBuild: 0.40,
+  downWeek: 0.80, downLong: 0.70,   // … at 80 % of the week and 70 % of the long run (my choice, untuned)
+  // the taper: about two weeks, volume cut by 41–60 %, intensity kept (Bosquet et al. 2007, Med Sci Sports Exerc)
+  taperWeeks: 2, taperWeek: [0.6, 0.45], taperLong: [0.6, 0.45],
+  // one quality session a week. Daniels caps threshold running at 10 % and intervals at 8 % of the week;
+  // the session is twice that, half of it warm-up, recoveries and cool-down (my choice)
+  tempoShare: 0.20, intervalShare: 0.16,
+  easyLadder: 1.11,            // my choice: each later easy run a little longer than the one before
+  easyMaxOfLong: 0.85,         // my choice: no easy run longer than 85 % of the week's long run
+  phaseBase: 0.40, phaseBuild: 0.35,   // my choice, untuned: the rest of the block before the taper is Peak
 };
 
 export type Kind = "long" | "easy" | "interval" | "tempo" | "race" | "rest";
@@ -52,10 +59,10 @@ export type LimitKey = "load_ratio" | "week_step" | "long_step" | "long_max" | "
 export interface Limit { key: LimitKey; name: string; value: number; ceiling: number; unit: string; holds: boolean; why: string; warnAt?: number }
 
 export const LIMIT_WHY: Record<LimitKey, string> = {
-  load_ratio: "Fatigue against fitness over the week, both from Runalyze's TRIMP (7- and 42-day averages), with fitness counted as at least 45 so a quiet month doesn't choke the next weeks. Over 1.25 the easy runs are trimmed, unless the week is no more than 6 % above the last full week. The long run keeps its own ladder and never steps back.",
-  week_step: "No week more than 12 % over the biggest of your last 4: tendons and calves adapt slower than fitness does.",
-  long_step: "The long run is the biggest single load on your calves, so it grows at most 10 % over the longest of the last 4 weeks.",
-  long_max: "The longest long run before the race, from Settings. For a half, 16 km is enough; more adds risk, not speed.",
+  load_ratio: "Fatigue against fitness over the week, both from Runalyze's TRIMP (7- and 42-day averages). Injury risk was lowest between 0.8 and 1.3 (Gabbett 2016), so over 1.3 the easy runs are trimmed, unless the week carries no more load than the last full week. The long run keeps its own ladder and never steps back.",
+  week_step: "No week more than 10 % over the biggest of your last 4. The 10 % rule is a coaching heuristic, not a proven limit.",
+  long_step: "The long run is the biggest single load of the week, so it grows at most 10 % over the longest of the last 4 weeks (the same heuristic).",
+  long_max: "The longest long run before the race, from Settings (18 km by default, my choice).",
   volume_hold: "Weeks stay at or under this until 3 of the last 4 reached 95 % of it: the body settles at a volume before the next step.",
 };
 
@@ -64,7 +71,7 @@ const r1 = (x: number) => Math.round(x * 10) / 10;
 export const rnd = (x: number, unit: string) => (unit === "km" ? Math.round(x * 10) / 10 : Math.round(x * 100) / 100);
 
 export function phases(totalWeeks: number) {
-  const taper = totalWeeks >= 16 ? 3 : 2;
+  const taper = RULES.taperWeeks;
   const rem = totalWeeks - taper;
   const base = Math.round(rem * RULES.phaseBase), build = Math.round(rem * RULES.phaseBuild);
   return { base, build, peak: rem - base - build, taper };
@@ -127,7 +134,7 @@ export function buildPlan(s: PlanSettings, runs: RunDay[], today: string, load?:
       long = Math.min(t4long * RULES.longStep, s.longMaxKm);
       [binding, holds] = long === s.longMaxKm ? ["longest long run", "long_max"] : ["long run +10 %", "long_step"];
       km = long / share;
-      if (km > t4km * RULES.weekStep) { km = t4km * RULES.weekStep; [binding, holds] = ["week +12 %", "week_step"]; }
+      if (km > t4km * RULES.weekStep) { km = t4km * RULES.weekStep; [binding, holds] = ["week +10 %", "week_step"]; }
       if (heldBack && km > s.volumeHoldKm) { km = s.volumeHoldKm; [binding, holds] = [`weekly km cap ${s.volumeHoldKm}`, "volume_hold"]; }
       // a capped week shrinks the long run to its share, but never below the last full week's long run
       if (long > km * share + 0.05) long = Math.max(km * share, Math.min(long, lastLong));
@@ -141,7 +148,7 @@ export function buildPlan(s: PlanSettings, runs: RunDay[], today: string, load?:
     const offsets = (runsN === 4 ? [0, 2, 4, 6] : [0, 2, 4]).map(k => (longOff + k) % 7);
     const hasQuality = !down && !isRaceWeek && ((phase === "Build" && pw >= 2) || phase === "Peak" || (phase === "Taper"));
     const qKind: Kind = phase === "Taper" ? "tempo" : quality % 2 === 0 ? "interval" : "tempo";
-    const qKm = hasQuality ? r1(Math.max(s.minRunKm, km * RULES.qualityShare)) : 0;
+    const qKm = hasQuality ? r1(Math.max(s.minRunKm, km * (qKind === "interval" ? RULES.intervalShare : RULES.tempoShare))) : 0;
     if (hasQuality) quality++;
     const easyDays = offsets.length - 1 - (hasQuality ? 1 : 0);
     const lay = (weekKm: number): Session[] => {
@@ -172,18 +179,19 @@ export function buildPlan(s: PlanSettings, runs: RunDay[], today: string, load?:
       return sessions;
     };
     let sessions = lay(km);
-    // the load ratio (building weeks): over the cap, and more than 6 % above the last full week's load,
-    // the easy runs are trimmed until it fits or every easy run is at its minimum
+    // the load ratio (building weeks): over the cap, and carrying more load than the last full week,
+    // the easy runs are trimmed until it fits or every easy run is at its minimum. A week that does not
+    // grow is never trimmed, so a quiet month can't choke the weeks after it (my choice).
     const breach = (x: Session[]) => {
       const w = weekRatio(state, weekDays(start, x));
-      return w.ratio > LOAD.softCap + 1e-9 && w.charge > LOAD.progFloor * lastCharge;
+      return w.ratio > LOAD.cap + 1e-9 && w.charge > lastCharge;
     };
     if (!down && phase !== "Taper" && breach(sessions)) {
       const floor = long + qKm + easyDays * s.minRunKm;
       let lo = floor, hi = km;
       for (let i = 0; i < 24; i++) { const mid = (lo + hi) / 2; if (breach(lay(mid))) hi = mid; else lo = mid; }
       km = r1(lo); sessions = lay(km);
-      [binding, holds] = [`load ratio ${LOAD.softCap} (easy runs trimmed)`, "load_ratio"];
+      [binding, holds] = [`load ratio ${LOAD.cap} (easy runs trimmed)`, "load_ratio"];
     }
     const laid = r1(sessions.reduce((a, x) => a + x.km, 0));
     const wr = weekRatio(state, weekDays(start, sessions));
@@ -191,7 +199,7 @@ export function buildPlan(s: PlanSettings, runs: RunDay[], today: string, load?:
       ({ key, name, value: rnd(value, unit), ceiling: rnd(ceiling, unit), unit, holds: holds === key, why: LIMIT_WHY[key] });
     const training = r1(sessions.filter(x => x.kind !== "race").reduce((a, x) => a + x.km, 0));   // the race is not training load
     const limits: Limit[] = [
-      L("load_ratio", "Load ratio", wr.ratio, LOAD.softCap, "×"),
+      L("load_ratio", "Load ratio", wr.ratio, LOAD.cap, "×"),
       L("week_step", "Week size", training, t4km * RULES.weekStep, "km"),
       L("long_step", "Long-run step", long, t4long * RULES.longStep, "km"),
       L("long_max", "Longest long run", long, s.longMaxKm, "km"),

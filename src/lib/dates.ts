@@ -1,5 +1,5 @@
 // Calendar days in the athlete's time zone (the server runs in UTC).
-let TZ = process.env.ATHLETE_TZ || "Asia/Jerusalem";
+let TZ = process.env.ATHLETE_TZ || "UTC";
 
 /** Set from Settings at the start of each request (secrets.timeZone). */
 export function setTz(tz: string) {

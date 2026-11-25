@@ -65,7 +65,7 @@ Settings → Sign-in; the app then keeps a hash and ignores this variable.
    | `APP_PASSPHRASE` | your passphrase (12+ characters) |
    | `SESSION_SECRET` | from step 2 |
    | `CRON_SECRET` | from step 2 |
-   | `ATHLETE_TZ` | your time zone, e.g. `Asia/Jerusalem` (decides what "today" is) |
+   | `ATHLETE_TZ` | your time zone, e.g. `Europe/Lisbon` (decides what "today" is) |
    | `TURSO_DATABASE_URL` | from step 1 |
    | `TURSO_AUTH_TOKEN` | from step 1 |
 
@@ -81,7 +81,6 @@ minutes. Run it locally against Turso; the shell variables win over `.env.local`
 
 ```bash
 TURSO_DATABASE_URL=libsql://… TURSO_AUTH_TOKEN=… npm run sync -- --full
-TURSO_DATABASE_URL=libsql://… TURSO_AUTH_TOKEN=… npm run import-asked     # optional: the asks in data/asked.json
 ```
 
 `.env.local` must hold the same `RUNALYZE_TOKEN`. After this, the daily cron only reads the last two weeks, which

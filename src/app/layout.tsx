@@ -23,6 +23,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" className={sans.variable} data-theme={theme === "light" || theme === "dark" ? theme : undefined}>
       <body>
+        {process.env.DEMO === "1" && <p className="small muted" style={{ textAlign: "center", margin: "8px 16px 0" }}>Demo: a made-up runner, not a real person.</p>}
         {children}
         <Tabs />
       </body>

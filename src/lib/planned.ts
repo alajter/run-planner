@@ -49,11 +49,3 @@ export async function plannedWeeks(s: PlanSettings, runs: RunDay[], t: string, l
     return { ...w, sessions, km, longKm: long, runs: sessions.length, limits };
   });
 }
-
-/** One-off: load what an earlier planner asked (data/*.json) as frozen days. Never overwrites. */
-export async function importAsked(rows: { date: string; kind: Session["kind"]; km: number; strides: boolean; week: string }[]) {
-  for (const r of rows) {
-    await run("INSERT OR IGNORE INTO plan (date, kind, km, strides, note, week, built_at) VALUES (?,?,?,?,?,?,?)",
-      [r.date, r.kind, r.km, r.strides ? 1 : 0, null, r.week, "imported"]);
-  }
-}
