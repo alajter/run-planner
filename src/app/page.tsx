@@ -73,13 +73,14 @@ export default async function Today() {
         </div>
         {v.acwr != null && v.acwr > 1.3 && <span className="small warn">Runalyze&apos;s load ratio is {v.acwr.toFixed(2)}, above 1.3: keep the easy days easy.</span>}
       </>}>
-        {rd.reasons.map(x => <span key={x} className="small warn">{x}</span>)}
+        {rd.reasons.map(r => <span key={r.key} className={`small ${r.level === "act" ? "warn" : ""}`}>{r.text}</span>)}
+        {rd.onlySmallDips && <span className="small muted">Small dips like these come and go from one morning to the next. Worth acting on only if they last 2–3 mornings.</span>}
         <ul className="meters">
           {rd.parts.map(p => <li key={p.key}>
             <div className="between small"><span>{p.name} <span className="muted"><span className="sr-only">weight </span>{Math.round(p.weight * 100)} %</span></span>
-              <span className={`num ${p.score >= 70 ? "ok" : p.score >= 40 ? "warn" : "bad"}`}><span className="sr-only">score </span>{p.score}</span></div>
+              <span className={`num ${p.level === "ok" ? "ok" : p.level === "watch" ? "warn" : "bad"}`}><span className="sr-only">score </span>{p.score}</span></div>
             <div className="lbar" aria-hidden="true">
-              <span style={{ width: `${p.score}%`, background: p.score >= 70 ? "var(--text-2)" : p.score >= 40 ? "var(--warn)" : "var(--bad)" }} /></div>
+              <span style={{ width: `${p.score}%`, background: p.level === "ok" ? "var(--text-2)" : p.level === "watch" ? "var(--warn)" : "var(--bad)" }} /></div>
             <span className="small muted">{p.detail}</span>
           </li>)}
         </ul>

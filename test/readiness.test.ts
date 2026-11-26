@@ -21,6 +21,22 @@ describe("readiness score (run-coach)", () => {
     const low = { ...good, hrv: { value: 33, baseline: 40, n: 28 } };
     expect(readiness(low).verdict).toBe("red");
   });
+  it("calls small dips inside the normal range 'watch', says which way they moved, and keeps red for outside it", () => {
+    const morning = { sleep: null, load: { yesterday: 0, avg: 60 }, band: [40, 58] as [number, number],
+      hrv: { value: 45.5, baseline: 50, n: 28 }, rhr: { value: 54, baseline: 52, n: 28 } };
+    const r = readiness(morning);
+    expect(r.score).toBe(48);
+    expect(r.parts.find(p => p.key === "hrv")!.level).toBe("watch");
+    expect(r.parts.find(p => p.key === "rhr")!.level).toBe("watch");
+    expect(r.onlySmallDips).toBe(true);
+    expect(r.reasons.map(x => x.text)).toEqual([
+      "HRV is down 9 % on your usual 50: 46 ms, inside Runalyze's normal 40–58.",
+      "Resting HR is up 2.0 bpm on your usual 52.0: 54 bpm, within a normal day's swing.",
+    ]);
+    const off = readiness({ ...morning, hrv: { value: 38, baseline: 50, n: 28 }, rhr: { value: 58, baseline: 52, n: 28 } });
+    expect(off.parts.filter(p => p.level === "act").map(p => p.key)).toEqual(["hrv", "rhr"]);
+    expect(off.onlySmallDips).toBe(false);
+  });
 });
 
 describe("load model", () => {
