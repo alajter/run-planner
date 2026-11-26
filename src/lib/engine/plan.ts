@@ -30,6 +30,7 @@ export const RULES = {
   weekStep: 1.10,              // a week ≤ +10 % over the biggest of the last 4 weeks
   longShare3: 0.40,            // my choice, untuned: the long run's share of a 3-run week …
   longShare4: 0.35,            // … and of a 4-run week
+  longShareMax: 0.45,          // my choice, untuned: when a cap holds the week, the long run may take up to this share
   // 3:1 step loading, three building weeks then one lighter, as in periodization texts (e.g. Bompa and Haff)
   downEvery: 4,                // every 4th week of Base and Build is a down week …
   downWeek: 0.80, downLong: 0.70,   // … at 80 % of the week and 70 % of the long run (my choice, untuned)
@@ -136,8 +137,10 @@ export function buildPlan(s: PlanSettings, runs: RunDay[], today: string, load?:
       km = long / share;
       if (km > t4km * RULES.weekStep) { km = t4km * RULES.weekStep; [binding, holds] = ["week +10 %", "week_step"]; }
       if (heldBack && km > s.volumeHoldKm) { km = s.volumeHoldKm; [binding, holds] = [`weekly km cap ${s.volumeHoldKm}`, "volume_hold"]; }
-      // a capped week shrinks the long run to its share, but never below the last full week's long run
-      if (long > km * share + 0.05) long = Math.max(km * share, Math.min(long, lastLong));
+      // a capped week keeps the long run's step while it fits in 45 % of the week (the easy runs give way);
+      // past that it shrinks to 45 %, but never below the last full week's long run. Shrinking it to the
+      // sizing share instead held it flat for as long as the cap lasted
+      if (long > km * RULES.longShareMax + 0.05) long = Math.max(km * RULES.longShareMax, Math.min(long, lastLong));
     }
     km = r1(km); long = r1(long);
 
@@ -179,14 +182,15 @@ export function buildPlan(s: PlanSettings, runs: RunDay[], today: string, load?:
       return sessions;
     };
     let sessions = lay(km);
-    // the load ratio (building weeks): over the cap, and carrying more load than the last full week,
-    // the easy runs are trimmed until it fits or every easy run is at its minimum. A week that does not
-    // grow is never trimmed, so a quiet month can't choke the weeks after it (my choice).
+    // the load ratio (building weeks still to run): over the cap, and carrying more load than the last full
+    // week, the easy runs are trimmed until it fits or every easy run is at its minimum. A week that does not
+    // grow is never trimmed, so a quiet month can't choke the weeks after it (my choice). A week already run
+    // is what was run: trimming it would change only its label.
     const breach = (x: Session[]) => {
       const w = weekRatio(state, weekDays(start, x));
       return w.ratio > LOAD.cap + 1e-9 && w.charge > lastCharge;
     };
-    if (!down && phase !== "Taper" && breach(sessions)) {
+    if (!past && !down && phase !== "Taper" && breach(sessions)) {
       const floor = long + qKm + easyDays * s.minRunKm;
       let lo = floor, hi = km;
       for (let i = 0; i < 24; i++) { const mid = (lo + hi) / 2; if (breach(lay(mid))) hi = mid; else lo = mid; }

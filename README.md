@@ -53,7 +53,7 @@ Where a value has no published source it says "my choice". Those are untuned.
 |---|---|---|
 | Long-run step | at most +10 % over the longest of the last 4 weeks, never over the longest-run setting (18 km by default) | The "10 % rule", a coaching heuristic. A graded 10 % program did not lower injuries in novice runners (Buist et al. 2008, *Am J Sports Med*). Default length: my choice |
 | Week step | at most +10 % over the biggest of the last 4 weeks | The same heuristic |
-| Week shape | the long run is 40 % of a 3-run week, 35 % of a 4-run week | My choice |
+| Week shape | the long run is 40 % of a 3-run week, 35 % of a 4-run week; when a cap holds the week, the long run keeps its step up to 45 % of it | My choice |
 | Load ratio | the week's mean fatigue over its mean fitness: over 1.3 the easy runs are trimmed, unless the week carries no more load than the last full week | Cap: Gabbett 2016 (*Br J Sports Med*), injury risk lowest at an acute:chronic ratio of 0.8 to 1.3. The exception: my choice |
 | Fitness and fatigue | exponentially weighted averages of daily TRIMP over 42 and 7 days, all sports | Coggan's Performance Manager spans, as Runalyze uses them |
 | Cost of a planned km | TRIMP per minute = HRr × 0.64 e^(1.92 HRr); easy, threshold and interval at 66.5 %, 85.5 % and 97.5 % of VO₂max, with %HRR taken as the same share; quality sessions half warm-up and recoveries | Banister's TRIMP (Banister 1991). Intensities: middle of Daniels' ranges (*Daniels' Running Formula*). %HRR ≈ %VO₂ reserve: Swain and Leutholtz 1997. Half warm-up: my choice |
