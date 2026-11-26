@@ -40,7 +40,7 @@ Before this, I used Sparing Horse, a self-hosted planner built on Runalyze, in m
 
 ## What it shows
 
-- **Today**: the session, readiness (a 0–100 score from sleep, HRV, resting HR and yesterday's load, ported from run-coach), this week, the race prediction.
+- **Today**: the session, readiness (a 0–100 score from sleep, HRV, resting HR and yesterday's load, ported from run-coach), this week, the race prediction. Once today's run is in: its debrief, and Runalyze's rest days to balanced form (fitness minus fatigue back to zero) against the days to the next run.
 - **Plan**: every week to race day, each sized from what was actually run.
 - **Runs**: the log with beats per km; each run's debrief (an easy run that ends with strides is judged on its easy part). In the heat, 26 °C or more, or 20 °C or more with any part of the run between 11:00 and 15:00, a run up to 5 bpm over the easy ceiling reads "A touch hard: the heat", not as a warning (thresholds: my choice, untuned).
 - **Progress**: beats per km, VO₂max, weekly km, Runalyze's fitness and prediction.

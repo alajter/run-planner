@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hrvScore, loadScore, readiness, rhrScore, sleepScore } from "../src/lib/engine/readiness";
+import { hrvScore, loadScore, readiness, restDays, rhrScore, sleepScore } from "../src/lib/engine/readiness";
 import { step, weekRatio } from "../src/lib/engine/load";
 import { demoRunner } from "../demo/runner.mjs";
 
@@ -36,6 +36,19 @@ describe("readiness score (run-coach)", () => {
     const off = readiness({ ...morning, hrv: { value: 38, baseline: 50, n: 28 }, rhr: { value: 58, baseline: 52, n: 28 } });
     expect(off.parts.filter(p => p.level === "act").map(p => p.key)).toEqual(["hrv", "rhr"]);
     expect(off.onlySmallDips).toBe(false);
+  });
+});
+
+describe("rest days to balanced form", () => {
+  it("is 0 when fitness already covers fatigue", () => expect(restDays(40, 40)).toBe(0));
+  it("counts the full rest days until fatigue falls to fitness", () => {
+    expect(restDays(40, 50)).toBe(0.9);          // under one day: one rest day balances it
+    expect(step({ ctl: 40, atl: 50 }, 0)).toSatisfy((s: { ctl: number; atl: number }) => s.atl < s.ctl);
+    expect(restDays(40, 80)).toBe(2.9);          // between two and three
+    let s = { ctl: 40, atl: 80 };
+    s = step(step(s, 0), 0);
+    expect(s.atl).toBeGreaterThan(s.ctl);
+    expect(step(s, 0)).toSatisfy((x: { ctl: number; atl: number }) => x.atl < x.ctl);
   });
 });
 

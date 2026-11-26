@@ -16,6 +16,7 @@ export default async function Today() {
   const v = await todayView();
   const s = v.session;
   const rd = v.readiness;
+  const a = v.after;
   const tone = rd.verdict === "green" ? "ok" : rd.verdict === "amber" ? "warn" : "bad";
   const tc = (await cookies()).get("theme")?.value;
   const theme = tc === "light" || tc === "dark" ? tc : "auto";
@@ -23,11 +24,17 @@ export default async function Today() {
   // sleep says so (and the dial dims), and a high load ratio gets a line of its own
   const sleepIn = rd.parts.some(p => p.key === "sleep");
   const restGreen = !s && rd.verdict === "green";
-  const word = restGreen ? "Recovered" : rd.word;
-  const sub = restGreen ? (v.next ? `Ready for the ${KIND[v.next.kind].toLowerCase()} on ${dow(v.next.date)}.` : null) : s ? rd.advice : null;
+  const word = a ? "Run done" : restGreen ? "Recovered" : rd.word;
+  const sub = a ? (v.next ? `This morning's score. Now recover for the ${KIND[v.next.kind].toLowerCase()} on ${dow(v.next.date)}.` : "This morning's score. Now recover.") : restGreen ? (v.next ? `Ready for the ${KIND[v.next.kind].toLowerCase()} on ${dow(v.next.date)}.` : null) : s ? rd.advice : null;
   const pctAsked = v.progress.askedKm > 0 ? Math.round((100 * (v.progress.ranKm - v.progress.stridesKm)) / v.progress.askedKm) : null;
   const mmss = (sec: number) => `${Math.floor(sec / 60)} min ${sec % 60} s`;
   const ranToday = v.latest && v.latest.date === v.today ? v.latest : null;
+  // after today's run the question is no longer "can I go" but "how did it go, and when am I fresh"
+  // rest days count from the end of one run to the next, as Runalyze does: Sunday to Tuesday is 2
+  const gap = v.next && a ? a.nextIn : null;
+  const short = a && gap != null ? Math.round((a.restDays - gap) * 10) / 10 : null;
+  const recovery = short == null ? null : short <= 0 ? "go" : short <= 0.5 ? "" : "warn";
+  const nextLine = v.next ? `${KIND[v.next.kind]} ${v.next.km} km on ${dow(v.next.date)}` : null;
   return (
     <main>
       {/* the session, under one header row: the day, settings and sync */}
@@ -36,7 +43,25 @@ export default async function Today() {
           <h1 className="now-sq">Today <span className="muted">· {dateShort(v.today)}</span></h1>
           <div className="row"><Link href="/settings" className="small muted">Settings</Link><ThemeToggle initial={theme} /><SyncButton /></div>
         </div>
-        {s ? <>
+        {a ? <div className="stack">
+          <div className="row"><span className="big">{a.asked ? `${KIND[a.asked.kind]} ${a.asked.km} km` : "Extra run"}</span><span className="tag">done</span></div>
+          <span className={`fig ${a.debrief.neutral ? "" : a.debrief.ok ? "go" : "warn"}`}>{a.debrief.headline}</span>
+          <span className="num">{a.debrief.did.km.toFixed(1)} km at {fmtPace(a.debrief.did.pace)}/km{a.debrief.did.hr ? ` · ${a.debrief.did.hr} bpm` : ""}
+            {ranToday?.strides ? ` + ${ranToday.strides.n}× strides` : ""}</span>
+          {[...a.debrief.change, ...a.debrief.keep].slice(0, 1).map(x => <span key={x.text} className="small muted">{x.text}</span>)}
+          <Link href={`/runs/${v.latest!.id}`}>Debrief ›</Link>
+          <div className="rest-hero">
+            <dl className="reads">
+              <div><dt>Recover</dt><dd>{a.restDays > 0
+                ? <><span className="num">{a.restDays}</span> rest {a.restDays === 1 ? "day" : "days"} to balanced form</>
+                : "already balanced"}</dd></div>
+              {v.next && <div><dt>Next run</dt><dd>{nextLine} {dateShort(v.next.date)}
+                <span className="muted"> · <span className="nw">in {a.nextIn} {a.nextIn === 1 ? "day" : "days"}</span></span></dd></div>}
+            </dl>
+            {recovery != null && <span className={recovery}>{`${gap} ${gap === 1 ? "day" : "days"} before it, ${a!.restDays} needed: ${
+              recovery === "go" ? "you'll be fresh for it." : recovery === "" ? "close to fresh, keep it easy." : "run it easy, by heart rate."}`}</span>}
+          </div>
+        </div> : s ? <>
           <div className="big">{KIND[s.kind]} {s.km} km</div>
           <div className="row"><span>{target(s.kind, v.easyCeiling, v.paces)}</span>{s.strides && <span className="tag">+ strides</span>}</div>
           {steps(s.kind, s.km, s.strides && rd.verdict === "green").map(x => <span key={x} className="small muted">· {x}</span>)}
@@ -52,7 +77,7 @@ export default async function Today() {
               <span className="muted"> · <span className="nw">in {daysBetween(v.today, v.next.date)} {daysBetween(v.today, v.next.date) === 1 ? "day" : "days"}</span></span></dd></div>}
           </dl>
         </div>}
-        {ranToday && <span>
+        {ranToday && !a && <span>
           Ran {ranToday.did.km.toFixed(1)} km at {fmtPace(ranToday.did.pace)}/km
           {ranToday.did.hr ? ` · ${ranToday.did.hr} bpm` : ""}{ranToday.strides ? ` + ${ranToday.strides.n}× strides` : ""}{" "}
           <Link href={`/runs/${ranToday.id}`}>Debrief ›</Link>
@@ -61,7 +86,7 @@ export default async function Today() {
       </section>
 
       {/* readiness: the dial and the verdict at a glance, the parts and VO₂max when opened */}
-      <Fold id="readiness" defaultOpen={rd.verdict !== "green"} summary={<>
+      <Fold id="readiness" defaultOpen={!a && rd.verdict !== "green"} summary={<>
         <h2>Readiness</h2>
         <div className="gauge-row">
           {rd.score != null && <Gauge score={rd.score} tone={tone} dim={!sleepIn} />}
