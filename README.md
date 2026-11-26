@@ -2,7 +2,7 @@
 
 My half-marathon plan, my runs from Runalyze, and my progress. One runner, one race, phone first.
 
-Inspired by [Sparing Horse](https://github.com/dros74/sparinghorse) by Duarte Rosado (AGPL-3.0). No code or tuned parameters are taken from it; the rules below cite their published sources. The readiness score comes from my earlier [run-coach](https://github.com/Andrel666/run-coach).
+Inspired by [Sparing Horse](https://github.com/dros74/sparinghorse) by Duarte Rosado (AGPL-3.0). No code or tuned parameters are taken from it; the rules below cite their published sources. The readiness score comes from my earlier [run-coach](https://github.com/alajter/run-coach).
 
 | Today | Plan | A run |
 |---|---|---|
@@ -21,7 +21,7 @@ npm run demo        # http://localhost:3200
 
 ## The problem
 
-The earlier versions did too much. [run-coach](https://github.com/Andrel666/run-coach) had chat, generated plans, recovery, gait analysis and strength work, and a generated plan cannot show why a week has the size it has. What I needed each day was smaller: the session, whether I am ready for it, and whether the race goal still holds.
+The earlier versions did too much. [run-coach](https://github.com/alajter/run-coach) had chat, generated plans, recovery, gait analysis and strength work, and a generated plan cannot show why a week has the size it has. What I needed each day was smaller: the session, whether I am ready for it, and whether the race goal still holds.
 
 ## Who it is for
 
@@ -95,10 +95,10 @@ environment variables and the first sync: [docs/DEPLOY.md](docs/DEPLOY.md).
 
 Four attempts at the same question for the same runner (me): what should I run today, and is the plan still right?
 
-1. [runalyze-scriptable](https://github.com/Andrel666/runalyze-scriptable) (2022). An iOS home-screen widget with my Runalyze numbers.
-2. [run-radar](https://github.com/Andrel666/run-radar) (Nov 2025 to Jan 2026). Run analytics plus sleep, and a morning readiness score.
-3. [run-coach](https://github.com/Andrel666/run-coach) (Mar 2026). A broad AI coach: chat, generated plans, recovery from Apple Health, gait analysis from video.
-4. [run-planner](https://github.com/Andrel666/run-planner) (Nov 2026). Narrowed to one runner and one race, with plan rules you can read and test instead of AI.
+1. [runalyze-scriptable](https://github.com/alajter/runalyze-scriptable) (2022). An iOS home-screen widget with my Runalyze numbers.
+2. [run-radar](https://github.com/alajter/run-radar) (Nov 2025 to Jan 2026). Run analytics plus sleep, and a morning readiness score.
+3. [run-coach](https://github.com/alajter/run-coach) (Mar 2026). A broad AI coach: chat, generated plans, recovery from Apple Health, gait analysis from video.
+4. [run-planner](https://github.com/alajter/run-planner) (Nov 2026). Narrowed to one runner and one race, with plan rules you can read and test instead of AI.
 
 ## License
 
