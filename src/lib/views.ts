@@ -4,8 +4,8 @@ import { all, getSetting, one } from "./db";
 import { addDays, daysBetween, today } from "./dates";
 import { DEFAULT_SETTINGS, type PlanSettings, type Session, type Week } from "./engine/plan";
 import { plannedWeeks } from "./planned";
-import { readiness, type Baselined, type Night } from "./engine/readiness";
-import { trimpPerKm } from "./engine/load";
+import { readiness, restDays, type Baselined, type Night } from "./engine/readiness";
+import { step, trimpPerKm, type LoadState } from "./engine/load";
 import type { LoadInput } from "./engine/plan";
 import { bpk, debrief, did, type RunRow } from "./engine/debrief";
 import { fmtTime, hrZones, paceZones, parseTime, type Paces } from "./engine/zones";
@@ -198,7 +198,20 @@ export async function todayView() {
   const vo2 = { effective: snap?.calc.effectiveVO2max ?? null, last10: vNow, change: vNow != null && vThen != null ? vNow - vThen : null };
   const target = parseTime(s.race.target);
   const predicted = racePrediction(snap?.prognosis ?? null, s.race.km);
+  // after today's run: its debrief, the rest days the load (today's run included) asks for, and the next run
+  let after = null;
+  if (latest && latest.date === t) {
+    const asked = pv.weeks.flatMap(w => w.days).find(x => x.ran?.id === latest.id) ?? (session && !session.ran ? session : null);
+    const recent = (await runs(addDays(t, -42))).filter(x => x.date < t && x.km >= 4);
+    const days = [...load.daily.keys()].sort();
+    let st: LoadState = { ctl: 0, atl: 0 };
+    for (let d = days[0]; d && d <= t; d = addDays(d, 1)) st = step(st, load.daily.get(d) ?? 0);
+    const rest = restDays(st.ctl, st.atl);
+    after = { asked, debrief: debrief(latest, asked, hrZones(profile.lthr).easyCeiling, recent), restDays: rest,
+              nextIn: next ? daysBetween(t, next.date) : null };
+  }
   return {
+    after,
     today: t, settings: s, easyCeiling: hrZones(profile.lthr).easyCeiling, paces: pv.paces,
     session, next, week, focusWeek, acwr: pv.acwr, readiness: rd, progress: pv.progress, vo2,
     metrics: await progressMetrics(t, hrZones(profile.lthr).easyCeiling),
