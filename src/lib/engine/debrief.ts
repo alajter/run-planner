@@ -7,15 +7,27 @@ import { fmtPace } from "./zones";
 export interface RunRow {
   id: number; date: string; km: number; sec: number; hr: number | null; cadence: number | null;
   decoupling: number | null; temp: number | null; vo2: number | null; analysis: Analysis | null;
+  datetime?: string | null;   // local start, "YYYY-MM-DD HH:MM…"
 }
 export interface Did { km: number; sec: number; pace: number; hr: number | null; cadence: number | null; decoupling: number | null; easyPart: boolean }
 export interface Check { label: string; asked: string; did: string; ok: boolean; word: string }
 export interface Line { text: string }
-export interface Debrief { headline: string; ok: boolean; did: Did; checks: Check[]; keep: Line[]; change: Line[]; bpk: number | null; bpkMedian: number | null }
+export interface Debrief { headline: string; ok: boolean; neutral: boolean; did: Did; checks: Check[]; keep: Line[]; change: Line[]; bpk: number | null; bpkMedian: number | null }
 
 export const KM_TOL = 0.10;
 export const BPK_MIN_KM = 4;
 const EVEN = 3, FADE = 5, DC_OK = 5, DC_HIGH = 10, EFF = 2, CAD = 4;
+export const HOT = 26, SUN_MIN = 20, SUN_FROM = 11, SUN_TO = 15, HEAT_SLACK = 5;
+
+/** Hot enough to lift heart rate: 26 °C or more, or 20 °C or more in the midday sun (any part of the run in 11:00–15:00). */
+export function heat(r: Pick<RunRow, "temp" | "sec" | "datetime">): "hot" | "sun" | null {
+  if (r.temp == null) return null;
+  if (r.temp >= HOT) return "hot";
+  const m = r.datetime?.match(/[ T](\d{2}):(\d{2})/);
+  if (!m || r.temp < SUN_MIN) return null;
+  const start = +m[1] + +m[2] / 60, end = start + r.sec / 3600;
+  return start < SUN_TO && end > SUN_FROM ? "sun" : null;
+}
 
 /** The run as the debrief reads it: the easy part when the run ended with strides. */
 export function did(r: RunRow): Did {
@@ -73,8 +85,15 @@ export function debrief(r: RunRow, asked: Session | null, easyCeiling: number, r
   const cmed = median(recent.map(x => did(x).cadence).filter((x): x is number => x != null));
   if (d.cadence && cmed && Math.abs(d.cadence - cmed) >= CAD)
     (d.cadence > cmed ? keep : change).push({ text: `Cadence ${d.cadence} spm, ${d.cadence > cmed ? "higher" : "lower"} than your usual ${cmed}.` });
-  if (r.temp != null && r.temp >= 26) change.push({ text: `${r.temp}°C: warm enough to lift heart rate a few beats at the same pace.` });
-  const ok = checks.every(c => c.ok);
-  const headline = !asked ? "Extra run" : ok ? "As asked" : checks.filter(c => !c.ok).map(c => c.word).join(" · ");
-  return { headline: headline[0].toUpperCase() + headline.slice(1), ok, did: d, checks, keep, change, bpk: b, bpkMedian: med };
+  const hot = heat(r);
+  if (hot) change.push({ text: hot === "hot"
+    ? `${r.temp}°C: warm enough to lift heart rate a few beats at the same pace.`
+    : `${r.temp}°C in the midday sun: hotter than the thermometer says, enough to lift heart rate a few beats at the same pace.` });
+  // a few beats over the ceiling in the heat is the heat, not a mistake: said plainly, not as a warning
+  const failed = checks.filter(c => !c.ok);
+  const heatOnly = !!hot && failed.length === 1 && failed[0].label === "Effort" && !!d.hr && d.hr - easyCeiling <= HEAT_SLACK;
+  if (heatOnly) change.unshift(...change.splice(change.findIndex(x => x.text.includes("°C")), 1));
+  const ok = failed.length === 0 || heatOnly;
+  const headline = !asked ? "Extra run" : heatOnly ? "A touch hard: the heat" : ok ? "As asked" : failed.map(c => c.word).join(" · ");
+  return { headline: headline[0].toUpperCase() + headline.slice(1), ok, neutral: heatOnly, did: d, checks, keep, change, bpk: b, bpkMedian: med };
 }
