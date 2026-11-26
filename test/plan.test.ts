@@ -96,3 +96,42 @@ describe("buildPlan", () => {
     }
   });
 });
+
+
+// a lower-volume runner (made up): 3 runs a week, 17 km with a 7 km long run, then a 17-week block with the
+// weekly km held at 30; the block is 3 weeks in, run as asked
+function lowVolume(weeksBefore: number) {
+  const block = "2026-11-01", today = "2026-11-19";
+  const s: PlanSettings = { ...DEFAULT_SETTINGS, race: { ...DEFAULT_SETTINGS.race, date: "2027-02-26" }, blockStart: block,
+    longMaxKm: 16, volumeHoldKm: 30 };
+  const runs: RunDay[] = [];
+  for (let w = -weeksBefore; w < 0; w++) { const d = addDays(block, 7 * w); runs.push({ date: d, km: 7 }, { date: addDays(d, 2), km: 5 }, { date: addDays(d, 4), km: 5 }); }
+  for (const w of buildPlan(s, runs, block).slice(0, 3))
+    for (const x of w.sessions) if (x.date < today) runs.push({ date: x.date, km: x.km });
+  return { s, p: buildPlan(s, runs, today) };
+}
+
+describe("a lower-volume runner", () => {
+  it("keeps the long run growing while the weekly km are held: never flat for 3 building weeks, short of the longest", () => {
+    const { s, p } = lowVolume(8);
+    const build = p.filter(w => !w.past && !w.down && w.phase !== "Taper");
+    for (let i = 2; i < build.length; i++)
+      if (build[i].longKm < s.longMaxKm) expect(build[i].longKm > build[i - 2].longKm).toBe(true);
+  });
+  it("reaches the longest long run with weeks to spare before the taper", () => {
+    const { s, p } = lowVolume(8);
+    const first = p.findIndex(w => w.longKm >= s.longMaxKm), taper = p.findIndex(w => w.phase === "Taper");
+    expect(taper - first).toBeGreaterThanOrEqual(2);
+  });
+  it("under a held week, keeps the long run within 45 % of it", () => {
+    const { p } = lowVolume(8);
+    for (const w of p.filter(w => !w.past && w.binding.startsWith("weekly km cap")))
+      expect(w.longKm).toBeLessThanOrEqual(Math.round(w.km * RULES.longShareMax * 10) / 10 + 0.1);
+  });
+  it("labels a week already run by its steps, never as trimmed, even from little fitness", () => {
+    const { p } = lowVolume(2);
+    const past = p.filter(w => w.past);
+    expect(past.length).toBeGreaterThan(0);
+    for (const w of past) expect(w.binding).not.toMatch(/^load ratio/);
+  });
+});
