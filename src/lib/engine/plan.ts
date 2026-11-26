@@ -30,7 +30,8 @@ export const RULES = {
   weekStep: 1.10,              // a week ≤ +10 % over the biggest of the last 4 weeks
   longShare3: 0.40,            // my choice, untuned: the long run's share of a 3-run week …
   longShare4: 0.35,            // … and of a 4-run week
-  longShareMax: 0.45,          // my choice, untuned: when a cap holds the week, the long run may take up to this share
+  longShareMax: 0.45,          // my choice, untuned: when a cap holds the week, the long run may take up to this share;
+                               // and once the long run is at its longest, the week holds at long ÷ this (or the last 4 weeks' biggest)
   // 3:1 step loading, three building weeks then one lighter, as in periodization texts (e.g. Bompa and Haff)
   downEvery: 4,                // every 4th week of Base and Build is a down week …
   downWeek: 0.80, downLong: 0.70,   // … at 80 % of the week and 70 % of the long run (my choice, untuned)
@@ -135,6 +136,10 @@ export function buildPlan(s: PlanSettings, runs: RunDay[], today: string, load?:
       long = Math.min(t4long * RULES.longStep, s.longMaxKm);
       [binding, holds] = long === s.longMaxKm ? ["longest long run", "long_max"] : ["long run +10 %", "long_step"];
       km = long / share;
+      // once the long run is at its longest the week holds: 45 % of it, or the biggest of the last 4 weeks
+      // if that is more, never less (my choice). Sized at the share alone, the week kept growing 10 % a
+      // week until the taper, so the peak fell wherever the taper began
+      if (long >= s.longMaxKm - 0.05) km = Math.min(km, Math.max(long / RULES.longShareMax, t4km));
       if (km > t4km * RULES.weekStep) { km = t4km * RULES.weekStep; [binding, holds] = ["week +10 %", "week_step"]; }
       if (heldBack && km > s.volumeHoldKm) { km = s.volumeHoldKm; [binding, holds] = [`weekly km cap ${s.volumeHoldKm}`, "volume_hold"]; }
       // a capped week keeps the long run's step while it fits in 45 % of the week (the easy runs give way);

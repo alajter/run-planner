@@ -70,6 +70,13 @@ describe("buildPlan", () => {
     }
   });
 
+  it("never cuts a week below the last full week because the long run is at its longest", () => {
+    const full = future.filter(w => !w.down && w.phase !== "Taper");
+    for (let i = 1; i < full.length; i++)
+      if (full[i].longKm >= settings.longMaxKm && !full[i].binding.startsWith("load ratio"))
+        expect(full[i].km).toBeGreaterThanOrEqual(full[i - 1].km - 0.1);
+  });
+
   it("never steps the long run back outside down and taper weeks", () => {
     let last = 0;
     for (const w of plan) {
@@ -127,6 +134,13 @@ describe("a lower-volume runner", () => {
     const { p } = lowVolume(8);
     for (const w of p.filter(w => !w.past && w.binding.startsWith("weekly km cap")))
       expect(w.longKm).toBeLessThanOrEqual(Math.round(w.km * RULES.longShareMax * 10) / 10 + 0.1);
+  });
+  it("holds the week once the long run is at its longest: no more growth before the taper", () => {
+    const { s, p } = lowVolume(8);
+    const held = p.filter(w => !w.past && !w.down && w.phase !== "Taper" && w.longKm >= s.longMaxKm);
+    expect(held.length).toBeGreaterThan(1);
+    for (let i = 1; i < held.length; i++) expect(held[i].km).toBeLessThanOrEqual(held[i - 1].km + 0.1);
+    expect(held[0].km).toBeGreaterThanOrEqual(Math.round((s.longMaxKm / RULES.longShareMax) * 10) / 10 - 0.1);
   });
   it("labels a week already run by its steps, never as trimmed, even from little fitness", () => {
     const { p } = lowVolume(2);
