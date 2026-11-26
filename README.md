@@ -65,7 +65,7 @@ Where a value has no published source it says "my choice". Those are untuned.
 | Runs | Sun long, Tue, Thu; a Saturday run joins once the long run reaches 12 km | My choice (a setting) |
 | Easy runs | at least 4 km, at most 85 % of the long run, each a little longer than the one before; strides on the last easy run of the week | My choice |
 | Easy effort | at or under 85 % of lactate-threshold heart rate (168 → 143 bpm for the demo runner) | Friel's running zones: zone 1 is under 85 % of LTHR |
-| Paces | easy top 74 % of VO₂max, threshold 85.5 %, interval 97.5 %; half and marathon pace from predicted race times | Daniels and Gilbert's oxygen cost of running and their curve of the share of VO₂max held over time (*Oxygen Power*, 1979) |
+| Paces | easy 59–74 % of VO₂max, shown as a range beside the heart-rate ceiling (easy runs go by heart rate), threshold 85.5 %, interval 97.5 %; half and marathon pace from predicted race times | Daniels and Gilbert's oxygen cost of running and their curve of the share of VO₂max held over time (*Oxygen Power*, 1979) |
 
 Weeks already run are read from the runs, so a missed or short week lowers the next ones.
 

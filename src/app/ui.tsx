@@ -14,7 +14,10 @@ export function target(kind: string, easyCeiling: number, paces: Paces | null): 
   if (kind === "interval") return paces ? `3-min reps at ${fmtPace(paces.interval)}/km, 2 min jog between` : "3-min reps, hard";
   if (kind === "tempo") return paces ? `10-min reps at ${fmtPace(paces.half)}/km, 2 min jog between` : "10-min reps at half-marathon pace";
   if (kind === "race") return paces ? `Start at ${fmtPace(paces.half)}/km` : "Race";
-  return `≤ ${easyCeiling} bpm`;
+  // easy and long runs go by heart rate; Daniels' easy range is shown beside it as a guide
+  return paces && (kind === "easy" || kind === "long")
+    ? `≤ ${easyCeiling} bpm · ${fmtPace(paces.easy.fast)}–${fmtPace(paces.easy.slow)}/km`
+    : `≤ ${easyCeiling} bpm`;
 }
 
 export function steps(kind: string, km: number, strides: boolean): string[] {
