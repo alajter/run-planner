@@ -19,7 +19,7 @@ export default async function Run({ params }: { params: Promise<{ id: string }> 
 
       <section className="card stack">
         <h2>{v.asked ? `Asked: ${KIND[v.asked.kind]} ${v.asked.km} km${v.asked.strides ? " + strides" : ""}` : "Not in the plan"}</h2>
-        <div className={`big fig ${d.ok ? "ok" : "warn"}`}>{d.headline}</div>
+        <div className={`big fig ${d.neutral ? "" : d.ok ? "ok" : "warn"}`}>{d.headline}</div>
         <dl className="reads">
           {d.checks.map(c => <div key={c.label}><dt>{c.label}</dt><dd><span className="num">{c.did}</span> · <span className={c.ok ? "ok" : "warn"}>{c.word}</span> <span className="muted">(asked {c.asked})</span></dd></div>)}
         </dl>
