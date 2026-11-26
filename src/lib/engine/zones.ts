@@ -34,15 +34,17 @@ export function raceTime(vo2max: number, km: number): number {
   return Math.round(((lo + hi) / 2) * 60);
 }
 
-export type Zone = "easy" | "marathon" | "half" | "threshold" | "interval";
-export type Paces = Record<Zone, number>;   // sec/km
+export type Zone = "marathon" | "half" | "threshold" | "interval";
+/** sec/km. Easy is a range, not one pace: anywhere in it is easy. */
+export type Paces = Record<Zone, number> & { easy: { fast: number; slow: number } };
 
-/** Pace for each zone. `easy` is the top of Daniels' easy range (74 % of VO₂max); threshold and interval are
- *  the middle of his 83–88 % and 95–100 % ranges; marathon and half are race paces from Daniels and Gilbert. */
+/** Pace for each zone. Easy is Daniels' whole easy range, 59–74 % of VO₂max (its fast end alone reads as a
+ *  target and is quicker than most easy running); threshold and interval are the middle of his 83–88 % and
+ *  95–100 % ranges; marathon and half are race paces from Daniels and Gilbert. */
 export function paceZones(vo2max: number): Paces {
   const p = (f: number) => Math.round(60000 / speedAt(vo2max, f));
   return {
-    easy: p(0.74),
+    easy: { fast: p(0.74), slow: p(0.59) },
     marathon: Math.round(raceTime(vo2max, 42.195) / 42.195),
     half: Math.round(raceTime(vo2max, 21.0975) / 21.0975),
     threshold: p(0.855),

@@ -8,9 +8,14 @@ describe("zones and costs", () => {
     expect(Math.abs(raceTime(50, 21.0975) - (91 * 60 + 35))).toBeLessThan(60);
   });
 
+  it("gives easy as Daniels' range, 59–74 % of VO₂max (VO₂max 36.8: 6:15–7:27/km)", () => {
+    expect(paceZones(36.83).easy).toEqual({ fast: 375, slow: 447 });
+  });
+
   it("orders the paces from slow to fast", () => {
     const p = paceZones(45);
-    expect(p.easy).toBeGreaterThan(p.marathon);
+    expect(p.easy.slow).toBeGreaterThan(p.easy.fast);
+    expect(p.easy.fast).toBeGreaterThan(p.marathon);
     expect(p.marathon).toBeGreaterThan(p.half);
     expect(p.half).toBeGreaterThan(p.threshold);
     expect(p.threshold).toBeGreaterThan(p.interval);
