@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Run Planner: a half-marathon plan from rules you can read</title>
+<meta name="description" content="One runner, one race: a half-marathon plan built from testable, sourced rules instead of AI, synced from Runalyze. Phone first, free to run.">
+<meta property="og:title" content="Run Planner: a half-marathon plan from rules you can read">
+<meta property="og:description" content="One runner, one race. Every number in the plan is either from a published source or labelled as my own choice. Rules instead of AI.">
+<meta property="og:image" content="https://alajter.github.io/run-planner/images/today.png">
+<meta property="og:type" content="website">
+<style>
+  :root { --bg:#fafaf7; --fg:#1b1d1a; --muted:#5e645c; --line:#e3e5df; --accent:#1f6f4a; --card:#ffffff; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#121412; --fg:#e8eae5; --muted:#9aa196; --line:#2a2e29; --accent:#5fc28f; --card:#1a1d19; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif; }
+  main { max-width: 880px; margin: 0 auto; padding: 48px 20px 64px; }
+  h1 { font-size: clamp(30px, 6vw, 44px); line-height:1.1; margin:0 0 12px; letter-spacing:-0.5px; }
+  h2 { font-size: 22px; margin: 48px 0 12px; }
+  p { margin: 0 0 12px; }
+  .lede { font-size: 19px; color: var(--muted); max-width: 640px; }
+  a { color: var(--accent); }
+  .cta { display:flex; flex-wrap:wrap; gap:10px; margin: 20px 0 8px; }
+  .btn { display:inline-block; padding:10px 16px; border-radius:8px; border:1px solid var(--line); text-decoration:none; color:var(--fg); background:var(--card); font-weight:600; }
+  .btn.primary { background: var(--accent); color:#fff; border-color: var(--accent); }
+  .shots { display:grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 28px; }
+  .shots figure { margin:0; }
+  .shots img { width:100%; border-radius: 14px; border:1px solid var(--line); background: var(--card); }
+  .shots figcaption { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .note { font-size: 13px; color: var(--muted); }
+  .grid { display:grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .card { background: var(--card); border:1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .card h3 { margin:0 0 6px; font-size:16px; }
+  .card p { margin:0; color: var(--muted); font-size: 15px; }
+  table { width:100%; border-collapse: collapse; font-size: 14px; background: var(--card); border:1px solid var(--line); border-radius: 12px; overflow:hidden; }
+  th, td { text-align:left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 13px; color: var(--muted); font-weight:600; }
+  tr:last-child td { border-bottom: none; }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; }
+  pre { background: var(--card); border:1px solid var(--line); border-radius: 10px; padding: 14px; overflow-x:auto; }
+  ol.series { padding-left: 20px; } ol.series li { margin-bottom: 6px; }
+  footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+  @media (max-width: 640px) { .shots, .grid { grid-template-columns: 1fr; } .shots { max-width: 320px; margin-left:auto; margin-right:auto; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Run Planner</h1>
+  <p class="lede">One runner, one race. A half-marathon plan from rules you can read and test, synced from Runalyze. Phone first, free to run.</p>
+  <div class="cta">
+    <a class="btn primary" href="https://github.com/alajter/run-planner">Code on GitHub</a>
+    <a class="btn" href="#try">Try the demo</a>
+  </div>
+
+  <div class="shots">
+    <figure><img src="images/today.png" alt="Today: the session, the week strip and a readiness gauge"><figcaption>Today: the session, the week and readiness</figcaption></figure>
+    <figure><img src="images/plan.png" alt="Plan: planned and run km per week to race day"><figcaption>Plan: every week to race day</figcaption></figure>
+    <figure><img src="images/run.png" alt="A long run's debrief: beats per km, pace and heart rate"><figcaption>A run's debrief</figcaption></figure>
+  </div>
+  <p class="note">Screenshots from the demo: a made-up runner, not a real person.</p>
+
+  <h2>The problem</h2>
+  <p>My earlier version did too much: chat, generated plans, recovery, gait analysis, strength work. And a generated plan can't show why a week has the size it has. What I needed each day was smaller: the session, whether I'm ready for it, and whether the race goal still holds.</p>
+
+  <h2>Decisions</h2>
+  <div class="grid">
+    <div class="card"><h3>Rules instead of AI</h3><p>The plan is plain code. Each week shows every limit it was checked against and which one set its size.</p></div>
+    <div class="card"><h3>The plan follows what was run</h3><p>Weeks already run are read from Runalyze, so a missed or short week lowers the next ones.</p></div>
+    <div class="card"><h3>Narrow on purpose</h3><p>One race, one runner, four tabs. No chat, no video analysis, no strength library.</p></div>
+    <div class="card"><h3>Free to run</h3><p>Vercel Hobby for the app and one daily sync, Turso for the database.</p></div>
+  </div>
+
+  <h2>Every number has a source</h2>
+  <p>Where a value has no published source, it says "my choice", and those are untuned. A few of the rules:</p>
+  <table>
+    <tr><th>Rule</th><th>Value</th><th>Source</th></tr>
+    <tr><td>Long-run step</td><td>At most +10% over the longest of the last 4 weeks</td><td>The "10% rule" heuristic; a graded 10% program did not lower injuries in novices (Buist et al. 2008)</td></tr>
+    <tr><td>Load ratio</td><td>Over 1.3 fatigue:fitness, easy runs are trimmed</td><td>Gabbett 2016: injury risk lowest at an acute:chronic ratio of 0.8 to 1.3</td></tr>
+    <tr><td>Fitness and fatigue</td><td>Weighted averages of daily TRIMP over 42 and 7 days</td><td>Coggan's Performance Manager spans, as Runalyze uses them</td></tr>
+    <tr><td>Taper</td><td>2 weeks at 60% and 45% of the peak week, quality kept</td><td>Bosquet et al. 2007: about two weeks, volume cut 41–60%, intensity kept</td></tr>
+    <tr><td>Easy effort</td><td>At or under 85% of lactate-threshold heart rate</td><td>Friel's running zones</td></tr>
+    <tr><td>Paces</td><td>Easy 74%, threshold 85.5%, interval 97.5% of VO₂max</td><td>Daniels and Gilbert, <em>Oxygen Power</em> (1979)</td></tr>
+  </table>
+  <p class="note">The full table, with every rule and setting, is in the <a href="https://github.com/alajter/run-planner#the-plans-rules-srclibengineplants-loadts-zonests">README</a>.</p>
+
+  <h2 id="try">Try it with the demo runner</h2>
+  <pre>git clone https://github.com/alajter/run-planner
+cd run-planner
+npm install
+npm run demo        # http://localhost:3200</pre>
+  <p>The demo fills a local database with a made-up runner: 16 weeks of runs with heart rate, cadence and elevation, a down week every fourth week, a missed week with a cold, and sleep, HRV and resting heart rate for every night. Same data on every machine. No token, no sign-in, nothing leaves your computer.</p>
+
+  <h2>The series</h2>
+  <p>Four attempts at the same question for the same runner: what should I run today, and is the plan still right?</p>
+  <ol class="series">
+    <li><strong>runalyze-scriptable</strong> (2022): an iOS home-screen widget with my Runalyze numbers.</li>
+    <li><strong>run-radar</strong> (Nov 2025 – Jan 2026): run analytics plus sleep, and a morning readiness score.</li>
+    <li><strong>run-coach</strong> (Mar 2026): a broad AI coach: chat, generated plans, recovery, gait analysis from video.</li>
+    <li><strong>run-planner</strong> (Nov 2026): narrowed to one runner and one race, with plan rules you can read and test instead of AI.</li>
+  </ol>
+
+  <footer>
+    Built by André Lajter · <a href="https://github.com/alajter/run-planner">github.com/alajter/run-planner</a> · MIT license.
+    Inspired by <a href="https://github.com/dros74/sparinghorse">Sparing Horse</a>; no code or tuned parameters taken from it.
+  </footer>
+</main>
+</body>
+</html>
